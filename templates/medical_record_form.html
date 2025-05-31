@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit' if record else 'Add' }} Medical Record</title>
+</head>
+<body>
+    <header>
+        {# Adjust heading based on context: editing an existing record, adding for a specific patient, or general add #}
+        <h1>
+            {% if record %}Edit Medical Record
+            {% elif patient %}Add Medical Record for {{ patient.name }} {{ patient.surname }}
+            {% else %}Add New Medical Record
+            {% endif %}
+        </h1>
+        <p><a href="{{ url_for('home') }}">Back to Dashboard</a></p>
+    </header>
+
+    <hr>
+    {% if error %}
+        <p style="color:red;"><strong>Error:</strong> {{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ form_action_url }}">
+        {% if record %}
+            {# EDIT MODE - Editing an existing record #}
+            <div>
+                <label>Patient:</label>
+                <p>{{ patient_details.name }} {{ patient_details.surname }} (Doc: {{ patient_details.document_number }})</p>
+            </div>
+            <div>
+                <label>Company:</label>
+                <p>{{ company_details.name if company_details else 'N/A' }}</p>
+            </div>
+             <input type="hidden" name="patient_id" value="{{ record.patient_id }}">
+             <input type="hidden" name="company_id" value="{{ record.company_id }}">
+
+        {% elif patient %}
+            {# ADD MODE - For a specific pre-selected patient (from /add_medical_record/<patient_id>) #}
+            <div>
+                <label>Patient:</label>
+                <p>{{ patient.name }} {{ patient.surname }} (Doc: {{ patient.document_number }})</p>
+            </div>
+            <div>
+                <label>Company:</label>
+                <p>{{ company_name if company_name else 'N/A (Company not found for patient)' }}</p>
+            </div>
+            {# No patient dropdown needed here, patient is fixed #}
+            <input type="hidden" name="patient_id" value="{{ patient.id }}">
+            {# company_id will be derived server-side from patient.company_id #}
+
+        {% else %}
+            {# ADD MODE - General, select patient from dropdown (from /add_medical_record) #}
+            <div>
+                <label for="patient_id">Patient:</label>
+                <select id="patient_id" name="patient_id" required>
+                    <option value="">Select Patient</option>
+                    {% for p in patients %}
+                        <option value="{{ p.id }}" {% if record_data and record_data.patient_id|int == p.id %}selected{% endif %}>
+                            {{ p.name }} {{ p.surname }} ({{ p.document_number }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="company_display">Company (auto-filled on save):</label>
+                <input type="text" id="company_display" name="company_display" readonly disabled
+                       value="{% if record_data and record_data.patient_id %}Will be auto-assigned{% endif %}">
+            </div>
+        {% endif %}
+
+        <div>
+            <label for="diagnosis">Diagnosis:</label>
+            <textarea id="diagnosis" name="diagnosis" rows="4" required>{{ record.diagnosis if record else (record_data.diagnosis if record_data else '') }}</textarea>
+        </div>
+        <div>
+            <label for="date">Date of Visit:</label>
+            <input type="date" id="date" name="date" value="{{ record.date if record else (record_data.date if record_data else '') }}" required>
+        </div>
+        <div>
+            <button type="submit">
+                {% if record %}Save Changes
+                {% elif patient %}Add Record for {{ patient.name }}
+                {% else %}Add Record
+                {% endif %}
+            </button>
+        </div>
+    </form>
+
+    {# Script for general add mode with patient dropdown #}
+    {% if not record and not patient %}
+    <script>
+        const patientSelect = document.getElementById('patient_id');
+        const companyDisplay = document.getElementById('company_display');
+        if (patientSelect) {
+            patientSelect.addEventListener('change', function() {
+                if (this.value) {
+                    companyDisplay.value = 'Will be auto-assigned';
+                } else {
+                    companyDisplay.value = '';
+                }
+            });
+            // Trigger change on load if a patient was already selected (e.g. due to form error re-population)
+            if (patientSelect.value) {
+                 patientSelect.dispatchEvent(new Event('change'));
+            }
+        }
+    </script>
+    {% endif %}
+
+</body>
+</html>

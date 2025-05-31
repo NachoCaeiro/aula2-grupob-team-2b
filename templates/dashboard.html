@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Clinic Dashboard</title>
+</head>
+<body>
+    <header>
+        <h1>Medical Clinic Dashboard</h1>
+        <p>Welcome, {{ session.username }}! <a href="{{ url_for('logout') }}">Logout</a></p>
+    </header>
+
+    <hr>
+
+    <section id="filters">
+        <h2>Filters</h2>
+        <form method="get" action="{{ url_for('home') }}">
+            <div>
+                <label for="search_company_name">Search by Company Name:</label>
+                <input type="text" id="search_company_name" name="search_company_name" value="{{ search_company_name_value if search_company_name_value else '' }}">
+            </div>
+            <div>
+                <label for="search_patient_document">Search by Patient Document Number:</label>
+                <input type="text" id="search_patient_document" name="search_patient_document" value="{{ search_patient_document_value if search_patient_document_value else '' }}">
+            </div>
+            <button type="submit">Apply Filters</button>
+            <button type="button" onclick="window.location.href='{{ url_for('home') }}'">Clear Filters</button>
+        </form>
+    </section>
+
+    <hr>
+
+    <section id="actions">
+        <h2>Actions</h2>
+        <button onclick="location.href='{{ url_for('add_company') }}'">Add New Company</button>
+        <button onclick="location.href='{{ url_for('add_patient') }}'">Add New Patient</button>
+        {# General Add Medical Visit button - useful if no specific patient is selected yet #}
+        <button onclick="location.href='{{ url_for('add_medical_record') }}'">Add Medical Visit (General)</button>
+    </section>
+
+    <hr>
+
+    <section id="companies-list">
+        <h2>Companies List</h2>
+        <ul>
+            {% if companies %}
+                {% for company in companies %}
+                    <li>
+                        {{ company.name }} - {{ company.email }} (ID: {{ company.id }})
+                        <a href="{{ url_for('edit_company', company_id=company.id) }}">Edit</a>
+                        <form action="{{ url_for('delete_company', company_id=company.id) }}" method="post" style="display:inline;">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this company and all its associated patients and records?');">Delete</button>
+                        </form>
+                    </li>
+                {% else %}
+                     <li>{% if search_company_name_value %}No companies found matching "{{ search_company_name_value }}".{% else %}No companies found.{% endif %}</li>
+                {% endfor %}
+            {% else %}
+                <li>Companies data not loaded.</li>
+            {% endif %}
+        </ul>
+    </section>
+
+    <hr>
+
+    <section id="patients-list">
+        <h2>Patients List</h2>
+        <ul>
+            {% if patients %}
+                {% for patient_item in patients %} {# Renamed to avoid conflict with selected_patient #}
+                    <li>
+                        {{ patient_item.name }} {{ patient_item.surname }} (Doc: {{ patient_item.document_number }}) - Company: {{ patient_item.company_name if patient_item.company_name else 'N/A' }}
+                        <a href="{{ url_for('edit_patient', patient_id=patient_item.id) }}">Edit</a>
+                        <form action="{{ url_for('delete_patient', patient_id=patient_item.id) }}" method="post" style="display:inline;">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this patient and all their medical records?');">Delete</button>
+                        </form>
+                        {# Link to show this patient's history via filter #}
+                        <a href="{{ url_for('home', search_patient_document=patient_item.document_number) }}">View History</a>
+                    </li>
+                {% else %}
+                    <li>{% if search_company_name_value or search_patient_document_value %}No patients found matching current filters.{% else %}No patients found.{% endif %}</li>
+                {% endfor %}
+            {% else %}
+                <li>Patients data not loaded.</li>
+            {% endif %}
+        </ul>
+    </section>
+
+    <hr>
+
+    <section id="medical-history">
+        <h2>Patient Medical History</h2>
+        {% if selected_patient %}
+            <h3>History for: {{ selected_patient.name }} {{ selected_patient.surname }} (Doc: {{ selected_patient.document_number }})</h3>
+            <p>Company: {{ selected_patient.company_name if selected_patient.company_name else 'N/A' }}</p>
+            <button onclick="location.href='{{ url_for('add_medical_record_for_patient', patient_id=selected_patient.id) }}'">Add New Visit for {{ selected_patient.name }}</button>
+
+            {% if medical_history %}
+                <ul>
+                    {% for record in medical_history %}
+                        <li>
+                            <strong>Date:</strong> {{ record.date }}<br>
+                            <strong>Company at Visit:</strong> {{ record.company_name }}<br>
+                            <strong>Diagnosis:</strong><br>
+                            <pre>{{ record.diagnosis }}</pre>
+                            <a href="{{ url_for('edit_medical_record', record_id=record.id) }}">Edit Record</a>
+                            <form action="{{ url_for('delete_medical_record', record_id=record.id) }}" method="post" style="display:inline; margin-left: 5px;">
+                                <button type="submit" onclick="return confirm('Are you sure you want to delete this medical record?');">Delete Record</button>
+                            </form>
+                            <a href="{{ url_for('download_medical_record_pdf', record_id=record.id) }}" target="_blank" style="margin-left: 5px;">View PDF</a>
+                        </li>
+                        <hr>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No medical records found for this patient.</p>
+            {% endif %}
+        {% elif search_patient_document_value %}
+             <p>Patient with document number "{{ search_patient_document_value }}" not found.</p>
+        {% else %}
+            <p>Search for a patient by document number to view their medical history, or click "View History" next to a patient in the list above.</p>
+        {% endif %}
+    </section>
+
+</body>
+</html>

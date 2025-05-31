@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit' if patient else 'Add' }} Patient</title>
+</head>
+<body>
+    <header>
+        <h1>{{ 'Edit' if patient else 'Add New' }} Patient</h1>
+        <p><a href="{{ url_for('home') }}">Back to Dashboard</a></p>
+    </header>
+
+    <hr>
+
+    <form method="post" action="{{ form_action_url }}">
+        <div>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{ patient.name if patient else '' }}" required>
+        </div>
+        <div>
+            <label for="surname">Surname:</label>
+            <input type="text" id="surname" name="surname" value="{{ patient.surname if patient else '' }}" required>
+        </div>
+        <div>
+            <label for="document_number">Document Number:</label>
+            <input type="text" id="document_number" name="document_number" value="{{ patient.document_number if patient else '' }}" required>
+        </div>
+        <div>
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" value="{{ patient.phone if patient else '' }}">
+        </div>
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ patient.email if patient else '' }}">
+        </div>
+        <div>
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" value="{{ patient.age if patient else '' }}">
+        </div>
+        <div>
+            <label for="company_id">Company:</label>
+            <select id="company_id" name="company_id" required>
+                <option value="">Select Company</option>
+                {% for company in companies %}
+                    <option value="{{ company.id }}" {% if patient and patient.company_id == company.id %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button type="submit">{{ 'Save Changes' if patient else 'Add Patient' }}</button>
+        </div>
+    </form>
+
+</body>
+</html>
